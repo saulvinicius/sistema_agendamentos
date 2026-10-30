@@ -142,15 +142,17 @@ export default function OwnerPage() {
 
   if (!authed) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6">
+      <main className="relative flex min-h-dvh items-center justify-center overflow-x-hidden bg-mesh px-4 py-8 sm:px-6">
+        <div className="orb pointer-events-none absolute -left-16 top-10 h-[240px] w-[240px] rounded-full bg-gold-400/20 blur-3xl sm:-left-24 sm:h-[420px] sm:w-[420px]" />
+        <div className="orb orb-delay pointer-events-none absolute -right-10 bottom-0 h-[200px] w-[200px] rounded-full bg-volt-400/15 blur-3xl sm:-right-16 sm:h-[360px] sm:w-[360px]" />
         <motion.form
           onSubmit={login}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-sm rounded-2xl border border-white/10 bg-ink-800 p-8 text-center shadow-lift"
+          className="glass-panel relative w-full max-w-sm rounded-3xl border border-white/10 p-6 text-center backdrop-blur-xl sm:p-8"
         >
           <Logo className="justify-center" />
-          <p className="mt-6 text-xs tracking-[0.3em] uppercase text-gold-400">Area do dono</p>
+          <p className="mt-6 text-xs font-semibold tracking-widest uppercase text-gold-400">Area do dono</p>
           <p className="mt-2 text-sm text-cream/60">Digite o PIN para gerenciar os horarios.</p>
           <input
             autoFocus
@@ -159,10 +161,10 @@ export default function OwnerPage() {
             type="password"
             inputMode="numeric"
             placeholder="PIN"
-            className="mt-6 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center tracking-[0.4em] outline-none focus:border-gold-400"
+            className="mt-6 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center font-semibold tracking-widest outline-none focus:border-gold-400 focus:shadow-gold"
           />
-          {authError && <p className="mt-3 text-sm text-red-400">{authError}</p>}
-          <button className="mt-6 w-full rounded-xl bg-gold-400 py-3 text-xs tracking-[0.28em] uppercase text-ink-950">
+          {authError && <p className="mt-3 text-sm text-flame-400">{authError}</p>}
+          <button className="btn-primary mt-6 w-full rounded-xl py-3 text-xs font-semibold tracking-wider uppercase text-ink-950">
             Entrar
           </button>
           <p className="mt-4 text-[11px] text-cream/35">PIN inicial: 1234</p>
@@ -175,16 +177,22 @@ export default function OwnerPage() {
   }
 
   return (
-    <main className="min-h-screen px-6 pb-16">
-      <header className="mx-auto flex max-w-6xl items-center justify-between py-6">
+    <main className="relative min-h-dvh overflow-x-hidden bg-mesh pb-[max(4rem,env(safe-area-inset-bottom))]">
+      <div className="orb pointer-events-none absolute -left-20 top-0 h-[240px] w-[240px] rounded-full bg-gold-400/15 blur-3xl sm:-left-32 sm:h-[480px] sm:w-[480px]" />
+      <div className="orb orb-delay pointer-events-none absolute -right-16 bottom-0 h-[200px] w-[200px] rounded-full bg-volt-400/12 blur-3xl sm:-right-24 sm:h-[400px] sm:w-[400px]" />
+
+      <header className="page-shell relative flex items-center justify-between gap-3 py-4 sm:py-6">
         <Logo />
-        <Link href="/" className="text-xs tracking-[0.22em] uppercase text-cream/50 hover:text-gold-400">
+        <Link
+          href="/"
+          className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold tracking-wider uppercase text-cream/70 backdrop-blur-md hover:border-gold-400/60 hover:text-gold-300 sm:px-4 sm:text-xs"
+        >
           Ver site
         </Link>
       </header>
 
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-wrap gap-2">
+      <div className="page-shell relative">
+        <div className="mb-6 flex w-full gap-2 overflow-x-auto scroll-fade pb-1 sm:mb-8 sm:flex-wrap sm:overflow-visible">
           {(
             [
               ["agenda", "Agenda"],
@@ -195,10 +203,10 @@ export default function OwnerPage() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`rounded-full border px-5 py-2 text-xs tracking-[0.22em] uppercase transition ${
+              className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-semibold tracking-wider uppercase transition sm:px-5 sm:text-xs ${
                 tab === id
-                  ? "border-gold-400 bg-gold-400 text-ink-950"
-                  : "border-white/10 text-cream/60 hover:border-gold-400/40"
+                  ? "border-gold-400 bg-gradient-to-r from-gold-300 to-gold-500 text-ink-950 shadow-gold"
+                  : "border-white/10 bg-white/5 text-cream/60 hover:border-gold-400/40"
               }`}
             >
               {label}
@@ -211,7 +219,7 @@ export default function OwnerPage() {
             <motion.p
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 text-sm text-gold-300"
+              className="mb-6 inline-block max-w-full rounded-full border border-volt-400/30 bg-volt-400/10 px-4 py-2 text-sm text-volt-300"
             >
               {message}
             </motion.p>
@@ -222,13 +230,13 @@ export default function OwnerPage() {
           <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <h2 className="font-display text-4xl">Proximos cortes</h2>
+                <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Proximos cortes</h2>
                 <p className="mt-1 text-sm text-cream/50">{upcoming.length} confirmados a partir de hoje</p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-white/10">
+            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 sm:rounded-3xl">
               {upcoming.length === 0 ? (
-                <p className="p-8 text-sm text-cream/45">Nenhum agendamento futuro.</p>
+                <p className="p-6 text-sm text-cream/45 sm:p-8">Nenhum agendamento futuro.</p>
               ) : (
                 <ul>
                   {upcoming.map((b, i) => (
@@ -237,17 +245,17 @@ export default function OwnerPage() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-5 py-4 last:border-0"
+                      className="flex flex-col gap-3 border-b border-white/5 px-4 py-4 last:border-0 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium text-cream">{b.name}</p>
-                        <p className="text-xs text-cream/45">
+                        <p className="break-words text-xs text-cream/45">
                           {b.date.split("-").reverse().join("/")} · {b.time} · {serviceName(b.serviceId)} · {b.phone}
                         </p>
                       </div>
                       <button
                         onClick={() => cancelBooking(b.id)}
-                        className="text-xs tracking-wider uppercase text-red-400/80 hover:text-red-300"
+                        className="self-start rounded-full border border-flame-400/30 bg-flame-400/10 px-3 py-1.5 text-xs tracking-wider uppercase text-flame-400 hover:bg-flame-400/20 sm:self-auto"
                       >
                         Cancelar
                       </button>
@@ -261,9 +269,9 @@ export default function OwnerPage() {
 
         {tab === "horarios" && (
           <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="mb-6 flex flex-wrap items-end gap-4">
-              <div className="flex-1">
-                <h2 className="font-display text-4xl">Grade do dia</h2>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Grade do dia</h2>
                 <p className="mt-1 text-sm text-cream/50">
                   Clique em um horario livre para bloquear. Clique de novo para liberar.
                 </p>
@@ -272,24 +280,24 @@ export default function OwnerPage() {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="rounded-xl border border-white/10 bg-ink-800 px-4 py-2 outline-none focus:border-gold-400"
+                className="w-full rounded-xl border border-white/10 bg-ink-800/80 px-4 py-2 outline-none backdrop-blur-md focus:border-gold-400 sm:w-auto"
               />
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slots.map((slot) => {
                 const booking = dayBookings.find((b) => b.time === slot.time && b.status === "confirmed");
                 const tone = !slot.available
                   ? slot.reason === "blocked"
-                    ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                    ? "border-amber-400/50 bg-amber-400/15 text-amber-200"
                     : slot.reason === "booked"
-                      ? "border-gold-400/40 bg-gold-400/10 text-gold-200"
-                      : "border-white/5 text-white/25"
-                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200 hover:border-emerald-300";
+                      ? "border-gold-400/50 bg-gold-400/15 text-gold-200 shadow-gold"
+                      : "border-white/5 bg-white/[0.02] text-white/25"
+                  : "border-volt-400/40 bg-volt-400/10 text-volt-300 hover:border-volt-300 hover:shadow-volt";
                 return (
                   <button
                     key={slot.time}
                     onClick={() => toggleSlot(slot.time, slot.available, slot.reason)}
-                    className={`rounded-xl border px-3 py-3 text-left transition ${tone}`}
+                    className={`min-w-0 rounded-2xl border px-2 py-3 text-left transition sm:px-3 ${tone}`}
                   >
                     <div className="text-sm font-medium">{slot.time}</div>
                     <div className="mt-1 truncate text-[11px] uppercase tracking-wider opacity-80">
@@ -315,46 +323,46 @@ export default function OwnerPage() {
             onSubmit={saveShop}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid max-w-xl gap-5"
+            className="glass-panel grid w-full max-w-xl gap-5 rounded-2xl border border-white/10 p-4 backdrop-blur-xl sm:rounded-3xl sm:p-6"
           >
-            <h2 className="font-display text-4xl">Funcionamento</h2>
+            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Funcionamento</h2>
             <label className="block">
-              <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Nome da loja</span>
+              <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Nome da loja</span>
               <input
                 value={settings.shopName}
                 onChange={(e) => setSettings({ ...settings, shopName: e.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 outline-none focus:border-gold-400"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-gold-400"
               />
             </label>
             <label className="block">
-              <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Frase</span>
+              <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Frase</span>
               <input
                 value={settings.tagline}
                 onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 outline-none focus:border-gold-400"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-gold-400"
               />
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <label>
-                <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Abre</span>
+                <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Abre</span>
                 <input
                   type="time"
                   value={settings.openTime}
                   onChange={(e) => setSettings({ ...settings, openTime: e.target.value })}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 outline-none focus:border-gold-400"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 outline-none focus:border-gold-400"
                 />
               </label>
               <label>
-                <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Fecha</span>
+                <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Fecha</span>
                 <input
                   type="time"
                   value={settings.closeTime}
                   onChange={(e) => setSettings({ ...settings, closeTime: e.target.value })}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 outline-none focus:border-gold-400"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 outline-none focus:border-gold-400"
                 />
               </label>
               <label>
-                <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Intervalo</span>
+                <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Intervalo</span>
                 <select
                   value={settings.slotInterval}
                   onChange={(e) => setSettings({ ...settings, slotInterval: Number(e.target.value) })}
@@ -368,7 +376,7 @@ export default function OwnerPage() {
               </label>
             </div>
             <div>
-              <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Dias fechados</span>
+              <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Dias fechados</span>
               <div className="flex flex-wrap gap-2">
                 {WEEK.map((d) => {
                   const on = settings.closedDays.includes(d.id);
@@ -383,7 +391,9 @@ export default function OwnerPage() {
                         setSettings({ ...settings, closedDays: next });
                       }}
                       className={`rounded-full border px-3 py-1.5 text-xs ${
-                        on ? "border-gold-400 bg-gold-400 text-ink-950" : "border-white/10 text-cream/60"
+                        on
+                          ? "border-gold-400 bg-gradient-to-r from-gold-300 to-gold-500 text-ink-950"
+                          : "border-white/10 text-cream/60"
                       }`}
                     >
                       {d.label}
@@ -393,15 +403,15 @@ export default function OwnerPage() {
               </div>
             </div>
             <label className="block">
-              <span className="mb-2 block text-xs tracking-[0.22em] uppercase text-gold-400">Novo PIN (opcional)</span>
+              <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Novo PIN (opcional)</span>
               <input
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
                 placeholder="Deixe vazio para manter"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 outline-none focus:border-gold-400"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-gold-400"
               />
             </label>
-            <button className="rounded-xl bg-gold-400 py-3 text-xs tracking-[0.28em] uppercase text-ink-950">
+            <button className="btn-primary min-h-12 rounded-xl py-3 text-xs font-semibold tracking-wider uppercase text-ink-950">
               Salvar
             </button>
           </motion.form>

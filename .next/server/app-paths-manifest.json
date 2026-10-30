@@ -1,0 +1,7 @@
+{
+  "/api/auth/route": "app/api/auth/route.js",
+  "/api/bookings/route": "app/api/bookings/route.js",
+  "/api/settings/route": "app/api/settings/route.js",
+  "/api/slots/route": "app/api/slots/route.js",
+  "/dono/page": "app/dono/page.js"
+}

@@ -4,7 +4,7 @@
   "ownerPin": "1234",
   "openTime": "09:00",
   "closeTime": "19:00",
-  "slotInterval": 30,
+  "slotInterval": 60,
   "closedDays": [
     0
   ],
