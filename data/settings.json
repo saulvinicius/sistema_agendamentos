@@ -1,0 +1,42 @@
+{
+  "shopName": "OvelhaNegra",
+  "tagline": "Corte, barba e ritual de qualidade",
+  "ownerPin": "1234",
+  "openTime": "09:00",
+  "closeTime": "19:00",
+  "slotInterval": 30,
+  "closedDays": [
+    0
+  ],
+  "blockedSlots": [],
+  "services": [
+    {
+      "id": "corte",
+      "name": "Corte classico",
+      "description": "Tesoura e maquina, alinhado ao seu estilo.",
+      "duration": 30,
+      "price": 45
+    },
+    {
+      "id": "barba",
+      "name": "Barba premium",
+      "description": "Toalha quente, navalha e oleo de finalizacao.",
+      "duration": 30,
+      "price": 40
+    },
+    {
+      "id": "combo",
+      "name": "Corte + Barba",
+      "description": "O ritual completo. Sai pronto para qualquer cena.",
+      "duration": 60,
+      "price": 75
+    },
+    {
+      "id": "sobrancelha",
+      "name": "Sobrancelha",
+      "description": "Design rapido, acabamento limpo.",
+      "duration": 15,
+      "price": 20
+    }
+  ]
+}
