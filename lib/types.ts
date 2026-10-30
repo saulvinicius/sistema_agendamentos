@@ -6,6 +6,17 @@ export type Service = {
   price: number;
 };
 
+export type Professional = {
+  id: string;
+  name: string;
+  role: string;
+  active: boolean;
+  openTime: string;
+  closeTime: string;
+  slotInterval: number;
+  closedDays: number[];
+};
+
 export type BookingStatus = "confirmed" | "cancelled";
 
 export type Booking = {
@@ -13,6 +24,7 @@ export type Booking = {
   name: string;
   phone: string;
   serviceId: string;
+  professionalId: string;
   date: string;
   time: string;
   createdAt: string;
@@ -29,10 +41,11 @@ export type Settings = {
   closedDays: number[];
   blockedSlots: string[];
   services: Service[];
+  professionals: Professional[];
 };
 
 export type Slot = {
   time: string;
   available: boolean;
-  reason?: "booked" | "blocked" | "past" | "closed";
+  reason?: "booked" | "blocked" | "past" | "closed" | "off";
 };

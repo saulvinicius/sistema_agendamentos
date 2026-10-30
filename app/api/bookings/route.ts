@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   buildSlots,
   getBookings,
+  getProfessional,
   getSettings,
   saveBookings,
   uid,
@@ -27,10 +28,11 @@ export async function POST(request: Request) {
   const name = String(body.name || "").trim();
   const phone = String(body.phone || "").trim();
   const serviceId = String(body.serviceId || "");
+  const professionalId = String(body.professionalId || "");
   const date = String(body.date || "");
   const time = String(body.time || "");
 
-  if (!name || !phone || !serviceId || !date || !time) {
+  if (!name || !phone || !serviceId || !professionalId || !date || !time) {
     return NextResponse.json({ error: "Preencha todos os campos" }, { status: 400 });
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
@@ -42,8 +44,12 @@ export async function POST(request: Request) {
   if (!service) {
     return NextResponse.json({ error: "Servico invalido" }, { status: 400 });
   }
+  const professional = getProfessional(settings, professionalId);
+  if (!professional || !professional.active) {
+    return NextResponse.json({ error: "Profissional invalido" }, { status: 400 });
+  }
 
-  const slots = buildSlots(date, settings, bookings);
+  const slots = buildSlots(date, settings, bookings, professional.id);
   const slot = slots.find((s) => s.time === time);
   if (!slot?.available) {
     return NextResponse.json(
@@ -57,6 +63,7 @@ export async function POST(request: Request) {
     name: name.slice(0, 60),
     phone: phone.slice(0, 20),
     serviceId,
+    professionalId: professional.id,
     date,
     time,
     createdAt: new Date().toISOString(),

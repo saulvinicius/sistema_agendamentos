@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import Logo from "@/components/Logo";
-import { Booking, Service, Slot } from "@/lib/types";
+import { Booking, Professional, Service, Slot } from "@/lib/types";
 
 type PublicSettings = {
   shopName: string;
@@ -14,6 +14,7 @@ type PublicSettings = {
   slotInterval: number;
   closedDays: number[];
   services: Service[];
+  professionals: Professional[];
 };
 
 const WEEK = [
@@ -31,6 +32,19 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function emptyProfessional(): Professional {
+  return {
+    id: "",
+    name: "",
+    role: "Barbeiro",
+    active: true,
+    openTime: "09:00",
+    closeTime: "19:00",
+    slotInterval: 30,
+    closedDays: [0],
+  };
+}
+
 export default function OwnerPage() {
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -39,9 +53,10 @@ export default function OwnerPage() {
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<Slot[]>([]);
-  const [tab, setTab] = useState<"agenda" | "horarios" | "loja">("agenda");
+  const [tab, setTab] = useState<"agenda" | "horarios" | "equipe" | "loja">("agenda");
   const [message, setMessage] = useState("");
   const [newPin, setNewPin] = useState("");
+  const [professionalId, setProfessionalId] = useState("");
 
   async function login(e: FormEvent) {
     e.preventDefault();
@@ -58,27 +73,34 @@ export default function OwnerPage() {
     setAuthed(true);
   }
 
-  async function loadAll(currentPin: string, currentDate: string) {
-    const [b, s, sl] = await Promise.all([
+  async function loadAll(currentPin: string, currentDate: string, currentProId?: string) {
+    const s = await fetch("/api/settings").then((r) => r.json());
+    setSettings(s);
+    const nextProId = currentProId || professionalId || s.professionals?.[0]?.id || "";
+    if (!professionalId && nextProId) setProfessionalId(nextProId);
+    const [b, sl] = await Promise.all([
       fetch(`/api/bookings?pin=${encodeURIComponent(currentPin)}`).then((r) => r.json()),
-      fetch("/api/settings").then((r) => r.json()),
-      fetch(`/api/slots?date=${currentDate}`).then((r) => r.json()),
+      fetch(
+        `/api/slots?date=${currentDate}${nextProId ? `&professionalId=${encodeURIComponent(nextProId)}` : ""}`
+      ).then((r) => r.json()),
     ]);
     if (Array.isArray(b)) setBookings(b);
-    setSettings(s);
     setSlots(sl.slots || []);
   }
 
   useEffect(() => {
-    if (authed) loadAll(pin, date);
-  }, [authed, date, pin]);
+    if (authed) loadAll(pin, date, professionalId);
+  }, [authed, date, pin, professionalId]);
+
+  const professionals = settings?.professionals || [];
+  const selectedPro = professionals.find((p) => p.id === professionalId) || professionals[0];
 
   const dayBookings = useMemo(
     () =>
       bookings
-        .filter((b) => b.date === date)
+        .filter((b) => b.date === date && (!professionalId || b.professionalId === professionalId))
         .sort((a, b) => a.time.localeCompare(b.time)),
-    [bookings, date]
+    [bookings, date, professionalId]
   );
 
   const upcoming = useMemo(
@@ -93,6 +115,10 @@ export default function OwnerPage() {
     return settings?.services.find((s) => s.id === id)?.name || id;
   }
 
+  function professionalName(id: string) {
+    return settings?.professionals.find((p) => p.id === id)?.name || id;
+  }
+
   async function cancelBooking(id: string) {
     const res = await fetch(`/api/bookings/${id}`, {
       method: "PATCH",
@@ -100,7 +126,7 @@ export default function OwnerPage() {
       body: JSON.stringify({ pin }),
     });
     if (res.ok) {
-      await loadAll(pin, date);
+      await loadAll(pin, date, professionalId);
       setMessage("Agendamento cancelado.");
     }
   }
@@ -114,14 +140,15 @@ export default function OwnerPage() {
         pin,
         date,
         time,
+        professionalId,
         action: available ? "block" : "unblock",
       }),
     });
-    await loadAll(pin, date);
+    await loadAll(pin, date, professionalId);
   }
 
-  async function saveShop(e: FormEvent) {
-    e.preventDefault();
+  async function saveShop(e?: FormEvent) {
+    e?.preventDefault();
     if (!settings) return;
     const res = await fetch("/api/settings", {
       method: "PUT",
@@ -129,7 +156,8 @@ export default function OwnerPage() {
       body: JSON.stringify({ ...settings, pin, newPin: newPin || undefined }),
     });
     if (!res.ok) {
-      setMessage("Nao foi possivel salvar.");
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.error || "Nao foi possivel salvar.");
       return;
     }
     if (newPin) {
@@ -137,7 +165,34 @@ export default function OwnerPage() {
       setNewPin("");
     }
     setMessage("Configuracoes salvas.");
-    await loadAll(newPin || pin, date);
+    await loadAll(newPin || pin, date, professionalId);
+  }
+
+  function updateProfessional(id: string, patch: Partial<Professional>) {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      professionals: settings.professionals.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    });
+  }
+
+  function addProfessional() {
+    if (!settings) return;
+    const next = emptyProfessional();
+    next.id = `novo-${Date.now().toString(36)}`;
+    next.name = "Novo profissional";
+    setSettings({ ...settings, professionals: [...settings.professionals, next] });
+  }
+
+  function removeProfessional(id: string) {
+    if (!settings) return;
+    if (settings.professionals.length <= 1) {
+      setMessage("Mantenha ao menos um profissional.");
+      return;
+    }
+    const next = settings.professionals.filter((p) => p.id !== id);
+    setSettings({ ...settings, professionals: next });
+    if (professionalId === id) setProfessionalId(next[0]?.id || "");
   }
 
   if (!authed) {
@@ -197,6 +252,7 @@ export default function OwnerPage() {
             [
               ["agenda", "Agenda"],
               ["horarios", "Horarios"],
+              ["equipe", "Equipe"],
               ["loja", "Loja"],
             ] as const
           ).map(([id, label]) => (
@@ -250,7 +306,7 @@ export default function OwnerPage() {
                       <div className="min-w-0">
                         <p className="font-medium text-cream">{b.name}</p>
                         <p className="break-words text-xs text-cream/45">
-                          {b.date.split("-").reverse().join("/")} · {b.time} · {serviceName(b.serviceId)} · {b.phone}
+                          {b.date.split("-").reverse().join("/")} · {b.time} · {professionalName(b.professionalId)} · {serviceName(b.serviceId)} · {b.phone}
                         </p>
                       </div>
                       <button
@@ -273,16 +329,34 @@ export default function OwnerPage() {
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Grade do dia</h2>
                 <p className="mt-1 text-sm text-cream/50">
-                  Clique em um horario livre para bloquear. Clique de novo para liberar.
+                  Cada profissional tem a propria grade. Clique para bloquear ou liberar.
                 </p>
               </div>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-ink-800/80 px-4 py-2 outline-none backdrop-blur-md focus:border-gold-400 sm:w-auto"
-              />
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <select
+                  value={professionalId}
+                  onChange={(e) => setProfessionalId(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-ink-800/80 px-4 py-2 outline-none backdrop-blur-md focus:border-gold-400 sm:w-auto"
+                >
+                  {professionals.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-ink-800/80 px-4 py-2 outline-none backdrop-blur-md focus:border-gold-400 sm:w-auto"
+                />
+              </div>
             </div>
+            {selectedPro && (
+              <p className="mb-4 text-xs uppercase tracking-wider text-cream/45">
+                {selectedPro.name} · {selectedPro.openTime}–{selectedPro.closeTime} · intervalo {selectedPro.slotInterval} min
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {slots.map((slot) => {
                 const booking = dayBookings.find((b) => b.time === slot.time && b.status === "confirmed");
@@ -315,6 +389,133 @@ export default function OwnerPage() {
                 );
               })}
             </div>
+          </motion.section>
+        )}
+
+        {tab === "equipe" && settings && (
+          <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Equipe</h2>
+                <p className="mt-1 text-sm text-cream/50">Defina horarios e dias de cada profissional.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addProfessional}
+                className="rounded-full border border-gold-400/40 bg-gold-400/10 px-4 py-2 text-xs font-semibold tracking-wider uppercase text-gold-300"
+              >
+                Adicionar
+              </button>
+            </div>
+            {settings.professionals.map((p) => (
+              <div key={p.id} className="glass-panel grid gap-4 rounded-2xl border border-white/10 p-4 sm:rounded-3xl sm:p-6">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Nome</span>
+                    <input
+                      value={p.name}
+                      onChange={(e) => updateProfessional(p.id, { name: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-gold-400"
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Funcao</span>
+                    <input
+                      value={p.role}
+                      onChange={(e) => updateProfessional(p.id, { role: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-gold-400"
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <label>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Abre</span>
+                    <input
+                      type="time"
+                      value={p.openTime}
+                      onChange={(e) => updateProfessional(p.id, { openTime: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 outline-none focus:border-gold-400"
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Fecha</span>
+                    <input
+                      type="time"
+                      value={p.closeTime}
+                      onChange={(e) => updateProfessional(p.id, { closeTime: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 outline-none focus:border-gold-400"
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Intervalo</span>
+                    <select
+                      value={p.slotInterval}
+                      onChange={(e) => updateProfessional(p.id, { slotInterval: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-white/10 bg-ink-800 px-3 py-3 outline-none focus:border-gold-400"
+                    >
+                      <option value={15}>15 min</option>
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>60 min</option>
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <span className="mb-2 block text-xs font-semibold tracking-widest uppercase text-gold-400">Folga</span>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEK.map((d) => {
+                      const on = p.closedDays.includes(d.id);
+                      return (
+                        <button
+                          type="button"
+                          key={d.id}
+                          onClick={() => {
+                            const next = on
+                              ? p.closedDays.filter((x) => x !== d.id)
+                              : [...p.closedDays, d.id];
+                            updateProfessional(p.id, { closedDays: next });
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-xs ${
+                            on
+                              ? "border-gold-400 bg-gradient-to-r from-gold-300 to-gold-500 text-ink-950"
+                              : "border-white/10 text-cream/60"
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => updateProfessional(p.id, { active: !p.active })}
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold tracking-wider uppercase ${
+                      p.active
+                        ? "border-volt-400/40 bg-volt-400/10 text-volt-300"
+                        : "border-white/10 text-cream/45"
+                    }`}
+                  >
+                    {p.active ? "Ativo" : "Inativo"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeProfessional(p.id)}
+                    className="text-xs uppercase tracking-wider text-flame-400"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={saveShop}
+              className="btn-primary min-h-12 rounded-xl px-6 py-3 text-xs font-semibold tracking-wider uppercase text-ink-950"
+            >
+              Salvar equipe
+            </button>
           </motion.section>
         )}
 

@@ -1,10 +1,43 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { Booking, Settings, Slot } from "./types";
+import { Booking, Professional, Settings, Slot } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const BOOKINGS_FILE = path.join(DATA_DIR, "bookings.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
+
+export const DEFAULT_PROFESSIONALS: Professional[] = [
+  {
+    id: "rafael",
+    name: "Rafael",
+    role: "Barbeiro senior",
+    active: true,
+    openTime: "09:00",
+    closeTime: "19:00",
+    slotInterval: 30,
+    closedDays: [0],
+  },
+  {
+    id: "lucas",
+    name: "Lucas",
+    role: "Especialista em barba",
+    active: true,
+    openTime: "10:00",
+    closeTime: "18:00",
+    slotInterval: 30,
+    closedDays: [0, 1],
+  },
+  {
+    id: "marina",
+    name: "Marina",
+    role: "Cortes e sobrancelha",
+    active: true,
+    openTime: "09:00",
+    closeTime: "17:00",
+    slotInterval: 30,
+    closedDays: [0],
+  },
+];
 
 export const DEFAULT_SETTINGS: Settings = {
   shopName: "Lamina",
@@ -15,6 +48,7 @@ export const DEFAULT_SETTINGS: Settings = {
   slotInterval: 30,
   closedDays: [0],
   blockedSlots: [],
+  professionals: DEFAULT_PROFESSIONALS,
   services: [
     {
       id: "corte",
@@ -47,6 +81,25 @@ export const DEFAULT_SETTINGS: Settings = {
   ],
 };
 
+function normalizeProfessionals(raw: unknown, fallback: Settings): Professional[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return fallback.professionals.map((p) => ({ ...p }));
+  }
+  return raw.map((item, index) => {
+    const p = item as Partial<Professional>;
+    return {
+      id: String(p.id || `pro-${index + 1}`),
+      name: String(p.name || `Profissional ${index + 1}`).slice(0, 40),
+      role: String(p.role || "Barbeiro").slice(0, 40),
+      active: p.active !== false,
+      openTime: String(p.openTime || fallback.openTime),
+      closeTime: String(p.closeTime || fallback.closeTime),
+      slotInterval: Number(p.slotInterval || fallback.slotInterval),
+      closedDays: Array.isArray(p.closedDays) ? p.closedDays.map(Number) : [...fallback.closedDays],
+    };
+  });
+}
+
 async function ensureFiles() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   try {
@@ -68,8 +121,16 @@ async function ensureFiles() {
 export async function getSettings(): Promise<Settings> {
   await ensureFiles();
   const raw = await fs.readFile(SETTINGS_FILE, "utf8");
-  const parsed = JSON.parse(raw) as Settings;
-  return { ...DEFAULT_SETTINGS, ...parsed };
+  const parsed = JSON.parse(raw) as Partial<Settings>;
+  const merged: Settings = {
+    ...DEFAULT_SETTINGS,
+    ...parsed,
+    services: parsed.services?.length ? parsed.services : DEFAULT_SETTINGS.services,
+    blockedSlots: Array.isArray(parsed.blockedSlots) ? parsed.blockedSlots : [],
+    closedDays: Array.isArray(parsed.closedDays) ? parsed.closedDays : DEFAULT_SETTINGS.closedDays,
+    professionals: normalizeProfessionals(parsed.professionals, DEFAULT_SETTINGS),
+  };
+  return merged;
 }
 
 export async function saveSettings(next: Settings): Promise<Settings> {
@@ -81,7 +142,12 @@ export async function saveSettings(next: Settings): Promise<Settings> {
 export async function getBookings(): Promise<Booking[]> {
   await ensureFiles();
   const raw = await fs.readFile(BOOKINGS_FILE, "utf8");
-  return JSON.parse(raw) as Booking[];
+  const parsed = JSON.parse(raw) as Booking[];
+  const fallbackId = DEFAULT_PROFESSIONALS[0].id;
+  return parsed.map((b) => ({
+    ...b,
+    professionalId: b.professionalId || fallbackId,
+  }));
 }
 
 export async function saveBookings(bookings: Booking[]): Promise<void> {
@@ -100,15 +166,15 @@ export function fromMinutes(total: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-export function slotKey(date: string, time: string): string {
-  return `${date}|${time}`;
+export function slotKey(date: string, time: string, professionalId?: string): string {
+  return professionalId ? `${professionalId}|${date}|${time}` : `${date}|${time}`;
 }
 
-export function generateTimes(settings: Settings): string[] {
-  const start = toMinutes(settings.openTime);
-  const end = toMinutes(settings.closeTime);
+export function generateTimes(openTime: string, closeTime: string, slotInterval: number): string[] {
+  const start = toMinutes(openTime);
+  const end = toMinutes(closeTime);
   const times: string[] = [];
-  for (let t = start; t < end; t += settings.slotInterval) {
+  for (let t = start; t < end; t += slotInterval) {
     times.push(fromMinutes(t));
   }
   return times;
@@ -130,25 +196,44 @@ export function weekdayOf(date: string): number {
   return new Date(y, m - 1, d).getDay();
 }
 
+export function getProfessional(settings: Settings, professionalId?: string): Professional | undefined {
+  if (professionalId) {
+    return settings.professionals.find((p) => p.id === professionalId);
+  }
+  return settings.professionals.find((p) => p.active) || settings.professionals[0];
+}
+
 export function buildSlots(
   date: string,
   settings: Settings,
   bookings: Booking[],
+  professionalId?: string,
   now = new Date()
 ): Slot[] {
-  const times = generateTimes(settings);
+  const professional = getProfessional(settings, professionalId);
+  if (!professional || !professional.active) {
+    return [];
+  }
+
+  const times = generateTimes(professional.openTime, professional.closeTime, professional.slotInterval);
   const weekday = weekdayOf(date);
-  const isClosed = settings.closedDays.includes(weekday);
+  const isClosed = settings.closedDays.includes(weekday) || professional.closedDays.includes(weekday);
   const today = todayISO(now);
   const current = nowHHMM(now);
 
   return times.map((time) => {
     if (isClosed) return { time, available: false, reason: "closed" as const };
-    if (settings.blockedSlots.includes(slotKey(date, time))) {
+    const personalKey = slotKey(date, time, professional.id);
+    const legacyKey = slotKey(date, time);
+    if (settings.blockedSlots.includes(personalKey) || settings.blockedSlots.includes(legacyKey)) {
       return { time, available: false, reason: "blocked" as const };
     }
     const taken = bookings.some(
-      (b) => b.status === "confirmed" && b.date === date && b.time === time
+      (b) =>
+        b.status === "confirmed" &&
+        b.date === date &&
+        b.time === time &&
+        (b.professionalId || professional.id) === professional.id
     );
     if (taken) return { time, available: false, reason: "booked" as const };
     if (date < today || (date === today && time <= current)) {
@@ -180,4 +265,15 @@ export function weekdayLabel(iso: string): string {
 
 export function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function slugify(value: string): string {
+  const base = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 24);
+  return base || uid();
 }

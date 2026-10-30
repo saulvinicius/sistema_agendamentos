@@ -9,6 +9,38 @@
     0
   ],
   "blockedSlots": [],
+  "professionals": [
+    {
+      "id": "rafael",
+      "name": "Rafael",
+      "role": "Barbeiro senior",
+      "active": true,
+      "openTime": "09:00",
+      "closeTime": "19:00",
+      "slotInterval": 30,
+      "closedDays": [0]
+    },
+    {
+      "id": "lucas",
+      "name": "Lucas",
+      "role": "Especialista em barba",
+      "active": true,
+      "openTime": "10:00",
+      "closeTime": "18:00",
+      "slotInterval": 30,
+      "closedDays": [0, 1]
+    },
+    {
+      "id": "marina",
+      "name": "Marina",
+      "role": "Cortes e sobrancelha",
+      "active": true,
+      "openTime": "09:00",
+      "closeTime": "17:00",
+      "slotInterval": 30,
+      "closedDays": [0]
+    }
+  ],
   "services": [
     {
       "id": "corte",

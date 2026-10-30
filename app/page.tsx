@@ -5,13 +5,14 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import BookingForm from "@/components/BookingForm";
-import { Service } from "@/lib/types";
+import { Professional, Service } from "@/lib/types";
 
 type PublicSettings = {
   shopName: string;
   tagline: string;
   closedDays: number[];
   services: Service[];
+  professionals: Professional[];
   openTime: string;
   closeTime: string;
 };
@@ -29,6 +30,7 @@ export default function HomePage() {
           tagline: "Corte, barba e ritual.",
           closedDays: [0],
           services: [],
+          professionals: [],
           openTime: "09:00",
           closeTime: "19:00",
         });
@@ -102,7 +104,11 @@ export default function HomePage() {
           className="glass-panel min-w-0 rounded-2xl border border-white/10 p-4 backdrop-blur-xl sm:rounded-3xl sm:p-6 lg:p-7"
         >
           {settings ? (
-            <BookingForm services={settings.services} closedDays={settings.closedDays} />
+            <BookingForm
+              services={settings.services}
+              professionals={settings.professionals || []}
+              closedDays={settings.closedDays}
+            />
           ) : (
             <div className="h-[min(480px,70dvh)] animate-pulse rounded-2xl bg-white/5" />
           )}
